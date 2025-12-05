@@ -22,17 +22,17 @@ const sendPdfResponse = (req, res, doc, filename) => {
 };
 
 router.get('/data', async (req, res) => {
-    try {
+  try {
     const { periodo = 'dia', fecha_desde, fecha_hasta } = req.query;
 
-    // Definir agrupamiento según periodo
+    // Definir agrupamiento según periodo, ajustando a hora boliviana
     let groupBy;
     if (periodo === 'semana') {
-      groupBy = "date_trunc('week', fecha)";
+      groupBy = "date_trunc('week', fecha AT TIME ZONE 'America/La_Paz')";
     } else if (periodo === 'mes') {
-      groupBy = "date_trunc('month', fecha)";
+      groupBy = "date_trunc('month', fecha AT TIME ZONE 'America/La_Paz')";
     } else {
-      groupBy = "date(fecha)";
+      groupBy = "date(fecha AT TIME ZONE 'America/La_Paz')";
     }
 
     // Construir query dinámicamente
@@ -47,14 +47,14 @@ router.get('/data', async (req, res) => {
 
     if (fecha_desde) {
       params.push(fecha_desde);
-      query += ` AND fecha::date >= $${params.length}`;
+      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date >= $${params.length}`;
     }
     if (fecha_hasta) {
       params.push(fecha_hasta);
-      query += ` AND fecha::date <= $${params.length}`;
+      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date <= $${params.length}`;
     }
     if (periodo === 'dia' && !fecha_desde && !fecha_hasta) {
-      query += ` AND fecha::date = CURRENT_DATE`;
+      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date = CURRENT_DATE`;
     }
 
     query += ` GROUP BY ${groupBy} ORDER BY periodo DESC`;

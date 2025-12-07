@@ -123,14 +123,29 @@ router.get('/', async (req, res) => {
     const { fecha_desde, fecha_hasta, limit = 20 } = req.query;
     let query = `
       SELECT 
-        v.*,
+        v.*, 
         u.username,
-        COUNT(dv.id) as items_count,
-        SUM(dv.subtotal) as total_real
+        COUNT(dv.id) AS items_count,
+        SUM(dv.subtotal) AS total_real,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', dv.id,
+              'producto_id', dv.producto_id,
+              'cantidad', dv.cantidad,
+              'precio_unitario', dv.precio_unitario,
+              'subtotal', dv.subtotal,
+              'nombre', p.nombre
+            )
+          ) FILTER (WHERE dv.id IS NOT NULL),
+          '[]'
+        ) AS detalles
       FROM helados_heleta.ventas v
       LEFT JOIN helados_heleta.detalles_ventas dv ON v.id = dv.venta_id
+      LEFT JOIN helados_heleta.productos p ON dv.producto_id = p.id
       LEFT JOIN helados_heleta.usuarios u ON v.usuario_id = u.id
       WHERE 1=1
+
     `;
     const params = [];
 

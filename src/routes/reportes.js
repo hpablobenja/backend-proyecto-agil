@@ -25,14 +25,17 @@ router.get('/data', async (req, res) => {
   try {
     const { periodo = 'dia', fecha_desde, fecha_hasta } = req.query;
 
-    // Definir agrupamiento según periodo, ajustando a hora boliviana
+    // Convertir fecha a zona horaria local primero
+    const fechaLocal = "fecha AT TIME ZONE 'UTC' AT TIME ZONE 'America/La_Paz'";
+
+    // Definir agrupamiento según periodo
     let groupBy;
     if (periodo === 'semana') {
-      groupBy = "date_trunc('week', fecha AT TIME ZONE 'America/La_Paz')";
+      groupBy = `date_trunc('week', ${fechaLocal})`;
     } else if (periodo === 'mes') {
-      groupBy = "date_trunc('month', fecha AT TIME ZONE 'America/La_Paz')";
+      groupBy = `date_trunc('month', ${fechaLocal})`;
     } else {
-      groupBy = "date(fecha AT TIME ZONE 'America/La_Paz')";
+      groupBy = `(${fechaLocal})::date`;
     }
 
     // Construir query dinámicamente
@@ -47,14 +50,14 @@ router.get('/data', async (req, res) => {
 
     if (fecha_desde) {
       params.push(fecha_desde);
-      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date >= $${params.length}`;
+      query += ` AND (${fechaLocal})::date >= $${params.length}`;
     }
     if (fecha_hasta) {
       params.push(fecha_hasta);
-      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date <= $${params.length}`;
+      query += ` AND (${fechaLocal})::date <= $${params.length}`;
     }
     if (periodo === 'dia' && !fecha_desde && !fecha_hasta) {
-      query += ` AND (fecha AT TIME ZONE 'America/La_Paz')::date = CURRENT_DATE`;
+      query += ` AND (${fechaLocal})::date = CURRENT_DATE`;
     }
 
     query += ` GROUP BY ${groupBy} ORDER BY periodo DESC`;
@@ -66,6 +69,7 @@ router.get('/data', async (req, res) => {
     res.status(500).json({ error: 'Error al generar reporte' });
   }
 });
+
 // ====================================================================
 // 1. Reporte de VENTAS (Protegido por authenticateToken en server.js)
 // ====================================================================

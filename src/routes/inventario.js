@@ -19,12 +19,19 @@ router.post('/movimiento', async (req, res) => {
     });
 
     // Verificar stock suficiente para salidas
+    if (tipo === 'entrada') {
+    await pool.query(
+      `UPDATE helados_heleta.productos
+       SET stock_actual = stock_actual + $1
+       WHERE id = $2`,
+      [cantidad, producto_id]
+        );
+      }
     if (tipo === 'salida') {
       const stockResult = await pool.query(
         'SELECT stock_actual FROM helados_heleta.productos WHERE id = $1',
         [producto_id]
       );
-      
       if (stockResult.rows[0]?.stock_actual < cantidad) {
         return res.status(400).json({ 
           error: 'Stock insuficiente',
